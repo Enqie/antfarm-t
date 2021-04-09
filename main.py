@@ -12,7 +12,7 @@ defaultdata = {
 "crops": {}
 }
 
-autosell = 'true'
+autosell = 'true' #work on this later
 
 pdata = None
 try:

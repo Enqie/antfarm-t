@@ -8,46 +8,51 @@ defaultdata = {
 "multiplier": 1.0, 
 "xp": 0, 
 "farmslots": 1, 
+"autosell": "true", 
 "farms": {"apple": 0, "mango": 0}, 
 "crops": {}
 }
-
-autosell = 'true' #work on this later
 
 pdata = None
 try:
   with open('pdata.json','r') as f:
     pdata = json.load(f)
-  print("Welcome back,", pdata['name'])
+  print(f'''
+Welcome back {pdata['name']}
+  ''')
 except FileNotFoundError:
     pdata = defaultdata
-    pdata['name'] = input("Welcome to antfarm\nInput Name\n> ")
+    pdata['name'] = input("Welcome to antfrm\n Input Name\n> ")
     with open('pdata.json', 'w') as f:
       json.dump(pdata, f)
   
 def help(args):
-  print(f'''
-  h - Shows this menu
-  x - Exit game
-  p - Shows your profile
-  f - Harvest crops
-  b - Buy farms (b [crop] [amount])
-  m - Opens shop menu (WIP)
-  ~n - Change your name
-  ~r - Reset game
+  print(f'''Commands:
+| h - Shows this menu
+| x - Exit game
+| p - Shows your profile
+| f - Harvest crops
+| b - Buy farms (b [crop] [amount])
+| m - Opens shop menu (WIP)
+
+Options:
+|~n - Change your name
+|~a - Toggle Autosell
+|~r - Reset game
   ''')
 
 def quit(args):
-  print("Goodbye")
+  print("Goodbye\n")
   exit()
   
 def stats(args):
   with open('pdata.json','r') as f:
     pdata = json.load(f)
-  print(f'''Name: {pdata['name']}
-Money: {pdata['money']}
-Multiplier: {pdata['multiplier']}x
-Farm Slots: {pdata['farmslots']}''')
+  print(f'''{pdata['name']}'s Profile:
+| Money: {pdata['money']}
+| Multiplier: {pdata['multiplier']}x
+| Farm Slots: {pdata['farmslots']}
+''')
 
 def namechange(args):
   newn = input("New Name: (Leave blank for no change)\n~")
@@ -56,57 +61,66 @@ def namechange(args):
     with open('pdata.json', 'w') as f:
       json.dump(pdata, f)
   else:
-    print('Name not changed')
+    print('Name not changed\n')
   
 def reset(args):
   ans = input("Are you sure you want to reset? (y/N)\n~ ")
   if ans.lower() == "y":
     pdata = defaultdata
-    pdata['name'] = input("Welcome to antfarm\nInput Name\n> ")
+    pdata['name'] = input("Welcome to antfrm\n Input Name\n> ")
     with open('pdata.json', 'w') as f:
       json.dump(pdata, f)
   else:
-    print("Reset cancelled")
+    print("Reset cancelled\n")
 
 def buy(args):
   with open('pdata.json','r') as f:
     pdata = json.load(f)
+  try:
+    clist = list(pdata['crops'].keys()).remove(args[0])
+  except ValueError:
+    clist = list(pdata['crops'].keys())
+  if clist == None:
+    clist = 0
+  else:
+    clist = len(clist)
   if args == []:
-    print('Type "s" for shop')
+    print('Type "s" for shop\n')
   elif args[0] in pdata['farms']:
     try:
       amt = int(args[1])
-      print(amt)
     except:
       amt = 1
     if pdata['money'] >= crops[args[0]]['buy-price'] * amt:
-      if pdata['farmslots'] > sum(pdata['farms'].values()):
+      if pdata['farmslots'] > clist:
         pdata['farms'][args[0]] += 1
         pdata['money'] -= crops[args[0]]['buy-price']
         with open('pdata.json', 'w') as f:
           json.dump(pdata, f)
-        print("+1", args[0], "farm")
+        print(f'''Bought {amt}x {args[0]} farm (-${crops[args[0]]['buy-price'] * amt})
+        ''')
       else:
-        print('No available farm slots.')
+        print('No available farm slots.\n')
     else:
-      print(f'''Not enough money, you need ${crops[args[0]]['buy-price']*amt - pdata['money']} more.''')
+      print(f'''Not enough money, you need ${crops[args[0]]['buy-price']*amt - pdata['money']} more.
+      ''')
   else:
-    print('Type "s" for shop')
+    print('Type "s" for shop\n')
 
 def shop(args):
   with open('pdata.json','r') as f:
     pdata = json.load(f)
-  print("to do: market")
+  print("to do: market\n")
 
 def harvest(args):
   with open('pdata.json','r') as f:
     pdata = json.load(f)
   if sum(pdata['farms'].values()) == 0:
-    print("You have no farms. Buy some from the market")
+    print("You have no farms. Buy some from the market\n")
   else:
     totals = {}
     sellamt = 0
-    print("Your ants harvested:")
+    print("Your ants collected:")
     for farm, count in pdata['farms'].items():
       totals[farm] = int(round(count * crops[farm]['yield'] * random.uniform(1,2.5),0))
       try:
@@ -116,13 +130,31 @@ def harvest(args):
       with open('pdata.json', 'w') as f:
         json.dump(pdata, f)
       if totals[farm] > 0:
-        print(f'''{totals[farm]} {farm}''')
-      if autosell == 'true':
+        print(f'''| + {totals[farm]} {farm}''')
+      if pdata['autosell'] == "true":
         for crop, count in pdata["crops"].items():
           sellamt += count * crops[crop]['sell-price']
           pdata['crops'][crop] -= count
           pdata['money'] += sellamt
-    print(f'''Sold all for ${sellamt}''')
+    if sellamt != 0:
+      print(f'''| Sold all for ${sellamt}
+      ''')
+    else:
+      print("")
+    
+def togglesell(args):
+  with open('pdata.json','r') as f:
+    pdata = json.load(f)
+  if pdata['autosell'] == "true":
+    pdata['autosell'] = "false"
+    print("| Autosell toggled off\n")
+    with open('pdata.json', 'w') as f:
+      json.dump(pdata, f)
+  elif pdata['autosell'] == "false":
+    pdata['autosell'] = "true"
+    print("| Autosell toggled on\n")
+    with open('pdata.json', 'w') as f:
+      json.dump(pdata, f)
     
 def invalid_command(args):
   print('Type "h" for help')
@@ -136,6 +168,7 @@ commands = {
   'm': shop,
   '~n': namechange,
   '~r': reset,
+  '~a': togglesell,
 }
 
 while True:

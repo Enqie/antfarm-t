@@ -1,6 +1,5 @@
 from cfg import crops
-import json
-import random
+import json, random, threading, time
 
 defaultdata = {
 "name": "", 
@@ -8,7 +7,8 @@ defaultdata = {
 "multiplier": 1.0, 
 "xp": 0, 
 "farmslots": 1, 
-"autosell": "true", 
+"autosell": "true",
+"cooldown": 3.0,
 "farms": {"apple": 0, "mango": 0}, 
 "crops": {}
 }
@@ -105,8 +105,8 @@ def buy(args):
       amt = 1
     if pdata['money'] >= crops[args[0]]['buy-price'] * amt:
       if pdata['farmslots'] > clist:
-        pdata['farms'][args[0]] += 1
-        pdata['money'] -= crops[args[0]]['buy-price']
+        pdata['farms'][args[0]] += amt
+        pdata['money'] -= crops[args[0]]['buy-price'] * amt
         with open('pdata.json', 'w') as f:
           json.dump(pdata, f)
         print(f'''Bought {amt}x {args[0]} farm (-${crops[args[0]]['buy-price'] * amt})''')
@@ -120,7 +120,7 @@ def buy(args):
 def sell(args):
   if pdata['crops'].values() != 0:
     for crop, count in pdata['crops'].items():
-      sellamt += pdata['crops'][crop] * crops[crop]['sell-price']
+      sellamt =+ pdata['crops'][crop] * crops[crop]['sell-price']
       print(sellamt)
     pdata['money'] = pdata['money'] + sellamt
     print(f'''Sold all for ${sellamt}''')
@@ -134,12 +134,16 @@ def shop(args):
     pdata = json.load(f)
   print("to do: market")
 
+t1 = 0
 def harvest(args):
+  global t1
+  t0 = time.time()
+  tdel = round(t0-t1, 1)
   with open('pdata.json','r') as f:
     pdata = json.load(f)
   if sum(pdata['farms'].values()) == 0:
     print("You have no farms. Buy some from the market")
-  else:
+  elif tdel >= pdata['cooldown']:
     totals = {}
     sellamt = 0
     print("Your ants collected:")
@@ -155,13 +159,16 @@ def harvest(args):
         sellamt += totals[farm] * crops[farm]['sell-price']
         pdata['crops'][farm] -= count
         pdata['money'] += sellamt
+      t1 = time.time()
     with open('pdata.json', 'w') as f:
       json.dump(pdata, f)
     if sellamt != 0:
       print(f''' Sold all for ${sellamt}''')
     else:
-      print("")
-    
+      print('')
+  else:
+    print(f'''Please wait {round(pdata['cooldown'] - tdel, 1)} more seconds''')
+
 def togglesell(args):
   with open('pdata.json','r') as f:
     pdata = json.load(f)

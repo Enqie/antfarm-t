@@ -10,7 +10,7 @@ crops = {
         'name': 'mango',
         'yield': 1,
         'buy-price': 25,
-        'sell-price': 5,
+        'sell-price': 2,
         'area': 'plains',
     }    
 }
